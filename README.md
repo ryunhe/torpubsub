@@ -12,5 +12,5 @@ A simple Pub/Sub server based on tornado + redis
 ## Usage
 
 ```
-python src/app.py --port=1606 -rport=6479
+python src/app.py --port=11606
 ```

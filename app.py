@@ -10,12 +10,9 @@ import tornadoredis
 
 define('port', default=8888, help="Run on the given port", type=int)
 
-define('rhost', default='127.0.0.1', help='Specify the Redis host name')
-define('rport', default=6379, help='Specify the Redis daemon port', type=int)
-define('rchnn', default='torpubsub', help="Pub/sub channel name")
+define('channel', default='torpubsub', help="Pub/sub channel name")
 
-
-redis = tornadoredis.Client(options.rhost, options.rport)
+redis = tornadoredis.Client()
 redis.connect()
 
 
@@ -28,10 +25,10 @@ class StreamHandler(tornado.websocket.WebSocketHandler):
 	def listen(self):
 		self.user = self.get_argument('user')
 
-		self.redis = tornadoredis.Client(options.rhost, options.rport)
+		self.redis = tornadoredis.Client()
 		self.redis.connect()
 
-		yield tornado.gen.Task(self.redis.subscribe, options.rchnn)
+		yield tornado.gen.Task(self.redis.subscribe, options.channel)
 		self.redis.listen(self.on_callback)
 
 	def on_callback(self, msg):
@@ -43,11 +40,11 @@ class StreamHandler(tornado.websocket.WebSocketHandler):
 
 	def on_message(self, cmds):
 		print '%s >> %s' % (self.user, cmds)
-		redis.publish(options.rchnn, json.dumps([self.user, cmds]))
+		redis.publish(options.channel, json.dumps([self.user, cmds]))
 
 	def on_close(self):
 		if self.redis.subscribed:
-			self.redis.unsubscribe(options.rchnn)
+			self.redis.unsubscribe(options.channel)
 			self.redis.disconnect()
 
 app = tornado.web.Application([
@@ -59,5 +56,5 @@ if __name__ == '__main__':
 	http_server = tornado.httpserver.HTTPServer(app)
 	http_server.listen(options.port)
 
-	print 'Server running at 0.0.0.0:%s\nQuit with CONTROL-C' % options.port
+	print 'Server running at 0.0.0.0:%s\nQuit the app with ^C' % options.port
 	tornado.ioloop.IOLoop.instance().start()
